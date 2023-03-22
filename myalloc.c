@@ -12,6 +12,7 @@
 
 struct block {
     struct block *next;
+    struct block *prev;
     int size; //tried to get fancy and use size_t and failed
     int in_use;
 };
@@ -32,6 +33,12 @@ void split_space(struct block *current_node, int requested_size) {
     new_node->size = available_space - required_space;
     new_node->in_use = 0;
     new_node->next = current_node->next;
+
+    new_node->prev = current_node; // new
+    if (current_node->next != NULL) {
+        current_node->next->prev = new_node; // new
+    }
+    
     current_node->next = new_node;
     current_node->size = PADDED_SIZE(requested_size);
     current_node->in_use = 1;
@@ -51,6 +58,7 @@ void *myalloc(int size) {
     }
 
     struct block *cur = head;
+    
     while (cur != NULL) {
         if (cur->size >= padded_node_size && !cur->in_use) {
             if (cur->size >= required_space) {
@@ -68,6 +76,20 @@ void *myalloc(int size) {
 void myfree(void *p) {
     struct block *accessed_node = p - padded_size_of_block;
     accessed_node->in_use = 0;
+
+    struct block *current_node = accessed_node;
+
+    while (current_node->next != NULL && !current_node->next->in_use) {
+        current_node->size += current_node->next->size + padded_size_of_block;
+        current_node->next = current_node->next->next;
+    }
+
+    current_node = accessed_node;
+
+    while (current_node->next != NULL && !current_node->next->in_use) {
+        current_node->size += current_node->next->size + padded_size_of_block;
+        current_node->next = current_node->next->next;
+    }
 }
 
 void print_data(void){
@@ -93,11 +115,11 @@ void print_data(void){
 }
 
 int main(void) {
-    void *p;
+    void *p, *q;
 
-    p = myalloc(512);
-    print_data();
+    p = myalloc(10); print_data();
+    q = myalloc(20); print_data();
 
-    myfree(p);
-    print_data();
+    myfree(q); print_data();
+    myfree(p); print_data();
 }

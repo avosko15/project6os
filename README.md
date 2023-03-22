@@ -1,2 +1,1 @@
-# project6os
-# project7os
+# project6os and project7os
